@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [claude/new-session-4yacjx, main]
+    branches: [claude/new-session-4yacjx, claude/affectionate-mccarthy-mzl3eh, main]
   pull_request:
   workflow_dispatch:
 
@@ -37,7 +37,7 @@ jobs:
 
   deploy:
     needs: check
-    if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'claude/new-session-4yacjx')
+    if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'claude/new-session-4yacjx' || github.ref_name == 'claude/affectionate-mccarthy-mzl3eh')
     runs-on: ubuntu-latest
     permissions:
       contents: read
