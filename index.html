@@ -1255,7 +1255,7 @@ const WHATSAPP_QUERIES = [
 ];
 
 function whatsappLink(text) {
-  return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(text);
+  return "https://web.whatsapp.com/send?phone=" + WHATSAPP_NUMBER + "&text=" + encodeURIComponent(text);
 }
 
 /* Custom hook: owns the dialog's open/close state and its side effects
