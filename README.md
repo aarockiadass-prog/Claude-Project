@@ -11,6 +11,7 @@ A single-page Kanban board for a fictitious bank's internal IT PMO. It is a demo
 - Priority colour-coding, overdue badges, and an inline "Delete? Yes / No" confirmation.
 - Add Task form with inline validation and optimistic updates.
 - Filters by project, assignee and priority, and a live summary strip.
+- A reminder popup 10 seconds after load, from `.claude/hooks/roadmap-popup.js` (IT Project Roadmap, next Monday 2:00 PM, Town Hall Meeting Room).
 - Optional email notification for new tasks through [FormSubmit](https://formsubmit.co).
 
 The board lives in memory only. Refreshing the page resets it to the seeded demo data.
@@ -25,7 +26,7 @@ Set your address in the `FORMSUBMIT_ENDPOINT` constant at the top of the `<scrip
 
 ## Deployment
 
-Pushes to the default branch run `.github/workflows/ci.yml`, which checks the page and deploys `index.html` to GitHub Pages.
+Every push and pull request runs the checks in `.github/workflows/ci.yml`. Pushes to the default branch (`claude/new-session-4yacjx`) also deploy `index.html` and the popup script to GitHub Pages. In repo Settings → Pages, the source must be set to "GitHub Actions".
 
 ## Notes
 

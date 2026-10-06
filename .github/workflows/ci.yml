@@ -2,7 +2,6 @@ name: CI/CD
 
 on:
   push:
-    branches: [claude/new-session-4yacjx, main]
   pull_request:
   workflow_dispatch:
 
@@ -34,10 +33,11 @@ jobs:
           open("page.js", "w", encoding="utf-8").write("\n".join(scripts))
           PY
           node --check page.js
+          node --check .claude/hooks/roadmap-popup.js
 
   deploy:
     needs: check
-    if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'claude/new-session-4yacjx')
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,8 +50,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Stage site files
         run: |
-          mkdir _site
-          cp index.html _site/
+          mkdir -p _site/hooks
+          cp .claude/hooks/roadmap-popup.js _site/hooks/
+          # Pages artifacts drop dot-folders, so serve the hook from /hooks/
+          sed 's#\.claude/hooks/#hooks/#' index.html > _site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
