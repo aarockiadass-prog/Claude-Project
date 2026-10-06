@@ -1,0 +1,23 @@
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+credentials*.json
+service-account*.json
+.claude/settings.local.json
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+_site/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
