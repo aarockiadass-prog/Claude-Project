@@ -399,6 +399,36 @@ button, input, select, textarea { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: no-preference) {
   .card, .column { transition: background-color .12s ease, opacity .12s ease; }
 }
+
+/* ==========================================================================
+   Statistics dashboard
+   ========================================================================== */
+.stats { padding: var(--s4) var(--s6); background: var(--surface); border-bottom: 1px solid var(--line); }
+.stats-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.stats-head h2 { font-size: 16px; }
+.stats-body[hidden] { display: none; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s3); margin: var(--s4) 0; padding: 0; list-style: none; }
+.kpis li { padding: var(--s3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--blue-50); }
+.kpis .kpi-value { display: block; font-size: 24px; font-weight: 700; line-height: 1.1; color: var(--blue-900); }
+.kpis .kpi-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink); }
+.kpis .kpi-note { display: block; font-size: 12px; color: var(--ink-soft); }
+.kpis li.is-bad .kpi-value { color: var(--red); }
+.kpis li.is-good .kpi-value { color: var(--green); }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s4); }
+.stat-card { padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--radius); }
+.stat-card h3 { font-size: 13px; margin-bottom: var(--s3); }
+.bars { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s2); }
+.bar-row { display: grid; grid-template-columns: minmax(70px, 38%) 1fr auto; align-items: center; gap: var(--s2); font-size: 12px; }
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.bar-track { height: 10px; border-radius: 5px; background: var(--grey-bg); overflow: hidden; display: flex; }
+.bar-fill { height: 100%; background: var(--blue-600); }
+.bar-fill.is-done { background: var(--green); }
+.bar-fill.is-blocked { background: var(--red); }
+.bar-fill.is-prog { background: var(--amber); }
+.bar-fill.is-grey { background: var(--grey); }
+.bar-value { font-variant-numeric: tabular-nums; color: var(--ink-soft); min-width: 2.5em; text-align: right; }
+.stat-foot { margin-top: var(--s3); font-size: 12px; color: var(--ink-soft); }
+@media (max-width: 767px) { .stats { padding-left: var(--s4); padding-right: var(--s4); } }
 </style>
 </head>
 <body>
@@ -427,6 +457,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
   </section>
   <p class="demo-note">Demo data only — the board lives in memory, so refreshing the page resets it to the sample tasks.</p>
 </header>
+
+<!-- ============================ Statistics dashboard ============================ -->
+<section class="stats" aria-labelledby="stats-heading">
+  <div class="stats-head">
+    <h2 id="stats-heading">Portfolio statistics</h2>
+    <button type="button" class="btn btn-secondary" id="toggle-stats" aria-expanded="true" aria-controls="stats-body">Hide</button>
+  </div>
+  <div class="stats-body" id="stats-body">
+    <ul class="kpis" id="kpis"></ul>
+    <div class="stat-grid" id="stat-grid"></div>
+  </div>
+</section>
 
 <!-- ================================ Filter bar ============================== -->
 <section class="filter-bar" aria-label="Filter tasks">
@@ -740,9 +782,97 @@ function renderSummary() {
   document.getElementById("summary").innerHTML = html;
 }
 
+/* ==========================================================================
+   Statistics: pure helpers over the task list (always ALL tasks, not filtered)
+   ========================================================================== */
+function mean(xs) { return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; }
+function median(xs) {
+  if (!xs.length) return null;
+  const s = xs.slice().sort((a, b) => a - b), m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+/** Sample standard deviation (n - 1); null when fewer than 2 values. */
+function stdDev(xs) {
+  if (xs.length < 2) return null;
+  const m = mean(xs);
+  return Math.sqrt(xs.reduce((a, x) => a + (x - m) * (x - m), 0) / (xs.length - 1));
+}
+function pct(part, whole) { return whole ? Math.round((part / whole) * 100) : 0; }
+function fmt1(n) { return n === null ? "n/a" : (Math.round(n * 10) / 10).toString(); }
+/** Whole days from today to an ISO date (negative = past). Local-date safe. */
+function daysFromToday(iso) {
+  const [y, m, d] = iso.split("-").map(Number), t = new Date();
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000);
+}
+function countBy(tasks, key) {
+  const out = {};
+  tasks.forEach(t => { out[t[key]] = (out[t[key]] || 0) + 1; });
+  return out;
+}
+
+function computeStats(tasks) {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === "Done").length;
+  const open = tasks.filter(t => t.status !== "Done");
+  const blocked = tasks.filter(t => t.status === "Blocked").length;
+  const overdue = tasks.filter(isOverdue).length;
+  const critOpen = open.filter(t => t.priority === "Critical" || t.priority === "High").length;
+  const dueDays = open.map(t => daysFromToday(t.dueDate));
+  return {
+    total, done, blocked, overdue, critOpen, openCount: open.length,
+    completionPct: pct(done, total), overduePct: pct(overdue, open.length), blockedPct: pct(blocked, total),
+    meanDue: mean(dueDays), medianDue: median(dueDays), sdDue: stdDev(dueDays),
+    byStatus: countBy(tasks, "status"), byPriority: countBy(tasks, "priority"),
+    byProject: countBy(tasks, "project"), byAssignee: countBy(open, "assignee")
+  };
+}
+
+function barList(rows, max, cls) {
+  return `<ul class="bars">` + rows.map(r => {
+    const w = max ? Math.round((r.value / max) * 100) : 0;
+    return `<li class="bar-row"><span class="bar-label" title="${escapeHtml(r.label)}">${escapeHtml(r.label)}</span>` +
+      `<span class="bar-track" aria-hidden="true"><span class="bar-fill ${escapeHtml(r.cls || cls || "")}" style="width:${w}%"></span></span>` +
+      `<span class="bar-value">${r.value}</span></li>`;
+  }).join("") + `</ul>`;
+}
+
+function renderStats() {
+  const st = computeStats(state.tasks);
+  const kpi = (value, label, note, cls) =>
+    `<li${cls ? ` class="${cls}"` : ""}><span class="kpi-value">${escapeHtml(value)}</span><span class="kpi-label">${escapeHtml(label)}</span><span class="kpi-note">${escapeHtml(note)}</span></li>`;
+  document.getElementById("kpis").innerHTML = [
+    kpi(st.completionPct + "%", "Completion rate", `${st.done} of ${st.total} tasks done`, st.completionPct >= 50 ? "is-good" : ""),
+    kpi(st.overduePct + "%", "Overdue rate", `${st.overdue} of ${st.openCount} open tasks`, st.overdue ? "is-bad" : "is-good"),
+    kpi(st.blockedPct + "%", "Blocked share", `${st.blocked} of ${st.total} tasks`, st.blocked ? "is-bad" : ""),
+    kpi(st.critOpen, "Critical / High open", "needs attention first", ""),
+    kpi(fmt1(st.meanDue) + " d", "Mean days to due", `median ${fmt1(st.medianDue)} d, σ ${fmt1(st.sdDue)} d (open tasks)`, st.meanDue !== null && st.meanDue < 0 ? "is-bad" : "")
+  ].join("");
+
+  const statusRows = STATUSES.map(s => ({
+    label: s, value: st.byStatus[s] || 0,
+    cls: { "Done": "is-done", "Blocked": "is-blocked", "In Progress": "is-prog", "Backlog": "is-grey" }[s]
+  }));
+  const prioRows = PRIORITIES.map(p => ({ label: p, value: st.byPriority[p] || 0 }));
+  const projRows = PROJECTS.map(p => ({ label: p, value: st.byProject[p] || 0 })).filter(r => r.value);
+  const assigneeRows = Object.keys(st.byAssignee).map(a => ({ label: a, value: st.byAssignee[a] }))
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label)).slice(0, 5);
+  const maxOf = rows => Math.max(0, ...rows.map(r => r.value));
+  const card = (title, rows, foot) =>
+    `<section class="stat-card" aria-label="${escapeHtml(title)}"><h3>${escapeHtml(title)}</h3>` +
+    (rows.length ? barList(rows, maxOf(rows)) : `<p class="stat-foot">No data.</p>`) +
+    (foot ? `<p class="stat-foot">${escapeHtml(foot)}</p>` : "") + `</section>`;
+
+  document.getElementById("stat-grid").innerHTML =
+    card("Tasks by status", statusRows) +
+    card("Tasks by priority", prioRows) +
+    card("Tasks by project", projRows) +
+    card("Open workload by assignee (top 5)", assigneeRows, "Open = not Done.");
+}
+
 function render() {
   renderBoard();
   renderSummary();
+  renderStats();
 }
 
 /** After a re-render, put keyboard focus back where the user was. */
@@ -1113,6 +1243,15 @@ function init() {
     const key = Object.keys(FIELD_IDS).find(k => FIELD_IDS[k] === event.target.id);
     if (key) setFieldError(key, "");
     updateCounters();
+  });
+
+  // Statistics show/hide (transient view state only)
+  const statsToggle = document.getElementById("toggle-stats");
+  statsToggle.addEventListener("click", () => {
+    const show = statsToggle.getAttribute("aria-expanded") !== "true";
+    statsToggle.setAttribute("aria-expanded", String(show));
+    statsToggle.textContent = show ? "Hide" : "Show";
+    document.getElementById("stats-body").hidden = !show;
   });
 
   // Panel toggle (open by default on wide screens)

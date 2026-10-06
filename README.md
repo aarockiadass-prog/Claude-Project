@@ -12,6 +12,7 @@ A single-page Kanban board for a fictitious bank's internal IT PMO. It is a demo
 - Drag and drop cards between columns, plus a keyboard-accessible "Move ▸" control.
 - Priority colour-coding, overdue badges, and an inline "Delete? Yes / No" confirmation.
 - Add Task form with inline validation and optimistic updates.
+- Portfolio statistics dashboard: completion, overdue and blocked rates, mean/median/std dev of days to due, and breakdowns by status, priority, project and assignee.
 - Filters by project, assignee and priority, and a live summary strip.
 - Optional email notification for new tasks through [FormSubmit](https://formsubmit.co).
 
