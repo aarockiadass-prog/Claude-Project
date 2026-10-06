@@ -2,9 +2,17 @@
 
 A single-page Kanban board for a fictitious bank's internal IT PMO. It is a demo and training tool built with vanilla HTML, CSS and JavaScript in one file, `index.html`.
 
-**Live demo:** https://aarockiadass-prog.github.io/Claude-Project/
+**Live demo (v1):** https://aarockiadass-prog.github.io/Claude-Project/
 
-![IT PMO Project Board](docs/screenshot.png)
+**Live demo (v2, redesign with statistics, header and footer):** https://aarockiadass-prog.github.io/Claude-Project/v2/
+
+v1 stays at the site root and is not replaced; v2 is published alongside it under `/v2/` (source: `v2/index.html`).
+
+![IT PMO Project Board v1](docs/screenshot.png)
+
+**v2:**
+
+![IT PMO Project Board v2](docs/screenshot-v2.png)
 
 ## Features
 
@@ -20,7 +28,7 @@ The board lives in memory only. Refreshing the page resets it to the seeded demo
 
 ## Run locally
 
-Open `index.html` in a browser. There is no build step and no server is needed.
+Open `index.html` (v1) or `v2/index.html` (v2) in a browser. There is no build step and no server is needed.
 
 ## Email notifications
 
@@ -28,7 +36,7 @@ Set your address in the `FORMSUBMIT_ENDPOINT` constant at the top of the `<scrip
 
 ## Deployment
 
-Pushes to the default branch run `.github/workflows/ci.yml`, which checks the page and deploys `index.html` to GitHub Pages.
+Pushes to the default branch run `.github/workflows/ci.yml`, which checks both pages and deploys `index.html` to the site root and `v2/index.html` to `/v2/` on GitHub Pages.
 
 ## Notes
 

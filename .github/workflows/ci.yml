@@ -24,16 +24,19 @@ jobs:
       - name: Check page structure and script syntax
         run: |
           test -f index.html
+          test -f v2/index.html
           grep -q "<title>" index.html
-          ! grep -nE "localStorage|sessionStorage|indexedDB|document\.cookie" index.html
+          ! grep -nE "localStorage|sessionStorage|indexedDB|document\.cookie" index.html v2/index.html
           python3 - <<'PY'
           import re
-          html = open("index.html", encoding="utf-8").read()
-          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
-          assert scripts, "no inline script found"
-          open("page.js", "w", encoding="utf-8").write("\n".join(scripts))
+          for name, path in (("page.js", "index.html"), ("page-v2.js", "v2/index.html")):
+              html = open(path, encoding="utf-8").read()
+              scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+              assert scripts, "no inline script found in " + path
+              open(name, "w", encoding="utf-8").write("\n".join(scripts))
           PY
           node --check page.js
+          node --check page-v2.js
 
   deploy:
     needs: check
@@ -50,8 +53,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Stage site files
         run: |
-          mkdir _site
+          mkdir -p _site/v2
           cp index.html _site/
+          cp v2/index.html _site/v2/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
