@@ -4,6 +4,8 @@ A single-page Kanban board for a fictitious bank's internal IT PMO. It is a demo
 
 **Live demo:** https://aarockiadass-prog.github.io/Claude-Project/
 
+![IT PMO Project Board](docs/screenshot.png)
+
 ## Features
 
 - Four fixed columns: Backlog, In Progress, Blocked, Done, each with a live task count.
